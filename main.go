@@ -33,12 +33,6 @@ func main() {
 		return
 	}
 	flag.Parse()
-	fmt.Println("body: ", body)
-	// jsonBody, err := json.Marshal(body)
-	// if err != nil {
-	// 	fmt.Println("Error: ", err)
-	// 	return
-	// }
 
 	lenOfArgs := len(os.Args)
 
@@ -99,6 +93,7 @@ func makeRequest(request_path string, method string, body string) (*http.Respons
 			return nil, fmt.Errorf("getting DELETE response from URL: %s", err)
 		}
 	case "post":
+		fmt.Println("Body:", body)
 		response, err = http.Post(url_path.String(), "application/json", strings.NewReader(body))
 		if err != nil {
 			return nil, fmt.Errorf("posting request to URL: %s", err)
