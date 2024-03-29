@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -17,7 +16,7 @@ func init() {
 	const defaultMethod = "GET"
 	flag.StringVar(&method, "method", defaultMethod, "HTTP method")
 	flag.StringVar(&method, "m", defaultMethod, "HTTP method (shorthand)")
-	flag.StringVar(&body, "body", "", "HTTP body (TODO: support json) under development")
+	flag.StringVar(&body, "body", "", "HTTP body (TODO: support json) \nExample:\n--body '{\"foo\":\"bar\"}'")
 	flag.StringVar(&body, "b", "", "HTTP body (shorthand) (TODO: support json) under development")
 }
 
@@ -35,9 +34,11 @@ func main() {
 	}
 	flag.Parse()
 	fmt.Println("body: ", body)
-	jsonBody, err := json.Marshal(body)
-
-	fmt.Println("After: ", string(jsonBody))
+	// jsonBody, err := json.Marshal(body)
+	// if err != nil {
+	// 	fmt.Println("Error: ", err)
+	// 	return
+	// }
 
 	lenOfArgs := len(os.Args)
 
@@ -48,7 +49,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	resp, err := makeRequest(request, method, nil)
+	resp, err := makeRequest(request, method, body)
 
 	if err != nil {
 		fmt.Printf("%v", err)
@@ -63,9 +64,16 @@ func main() {
 		resp.Body.Read(body)
 		fmt.Printf("%s\n", body)
 	}
+	if resp.StatusCode == 500 {
+		body := make([]byte, 4096*25)
+		fmt.Println("\nError 500")
+		resp.Body.Read(body)
+		fmt.Printf("%s\n", body)
+		os.Exit(1)
+	}
 }
 
-func makeRequest(request_path string, method string, body json.RawMessage) (*http.Response, error) {
+func makeRequest(request_path string, method string, body string) (*http.Response, error) {
 	url_path, err := url.Parse(request_path)
 	if err != nil {
 		return nil, fmt.Errorf("sing par URL: %s", err)
@@ -89,6 +97,11 @@ func makeRequest(request_path string, method string, body json.RawMessage) (*htt
 		response, err = client.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("getting DELETE response from URL: %s", err)
+		}
+	case "post":
+		response, err = http.Post(url_path.String(), "application/json", strings.NewReader(body))
+		if err != nil {
+			return nil, fmt.Errorf("posting request to URL: %s", err)
 		}
 	default:
 		return nil, fmt.Errorf("unsupported method %s", methodLower)
